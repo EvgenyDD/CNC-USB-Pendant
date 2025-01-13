@@ -1,4 +1,5 @@
 #include "usbd_pend_hid.h"
+#include "usbd_core_dfu.h"
 #include "usbd_ctlreq.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
@@ -43,7 +44,7 @@ static uint8_t deinit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 	return 0;
 }
 
-static uint8_t setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+static uint8_t hid_setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
 	uint16_t len = 0;
 	uint8_t *pbuf = NULL;
@@ -143,6 +144,28 @@ static uint8_t setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 	return USBD_OK;
 }
 
+static uint8_t setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+{
+	switch(req->bmRequest & USB_REQ_RECIPIENT_MASK)
+	{
+	case USB_REQ_RECIPIENT_INTERFACE:
+		if(req->wIndex == 0)
+		{
+			return usbd_dfu_setup(pdev, req);
+		}
+		else
+		{
+			return hid_setup(pdev, req);
+		}
+
+	case USB_REQ_RECIPIENT_ENDPOINT:
+		return hid_setup(pdev, req);
+
+	default: break;
+	}
+	return USBD_OK;
+}
+
 uint8_t usbd_pend_hid_send_report(USBD_HandleTypeDef *pdev, uint8_t *report, uint16_t len)
 {
 	if(pdev->dev_state == USBD_STATE_CONFIGURED)
@@ -164,6 +187,7 @@ static uint8_t ep0_rx_ready(USBD_HandleTypeDef *pdev)
 		pend_hid_parse_buf(hid_sts.report_buf_ep0, hid_sts.report_size_ep0);
 		hid_sts.is_ep0_rpt_avail = 0;
 	}
+	usbd_dfu_ep0_rx_ready(pdev);
 	return 0;
 }
 

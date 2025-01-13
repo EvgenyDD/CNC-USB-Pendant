@@ -14,6 +14,8 @@ void init(void);
 void loop(void);
 void systick_irq(void);
 
+void platform_reset(void);
+
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern uint32_t g_uid[3];
 

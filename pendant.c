@@ -2,6 +2,7 @@
 #include "main.h"
 #include "platform.h"
 #include "stm32h5xx.h"
+#include "usbd_core_dfu.h"
 #include "usbd_pend_hid.h"
 #include <string.h>
 
@@ -115,6 +116,11 @@ uint32_t init_seq = 0;
 
 void loop(void)
 {
+	static uint32_t systick_ms_prev = 0;
+	uint32_t diff_ms = (HAL_GetTick() - systick_ms_prev);
+	if(diff_ms > 0x0FFFFFFF) diff_ms = 0xFFFFFFFF - systick_ms_prev + HAL_GetTick();
+	systick_ms_prev = HAL_GetTick();
+
 	static uint32_t prev_tim = 0;
 	{ // report update
 		hid_report.keyCode = 0;
@@ -130,9 +136,11 @@ void loop(void)
 	}
 	if(usbd_pend_hid_send_report(&hUsbDeviceFS, (uint8_t *)&hid_report, sizeof(hid_report)) == 0) prev_tim = TIM1->CNT;
 	if(display_is_update_pending()) display_update();
+
+	usbd_dfu_poll(diff_ms);
 }
 
-void parse_req(bool updated)
+static void parse_req(bool updated)
 {
 	if(updated)
 	{

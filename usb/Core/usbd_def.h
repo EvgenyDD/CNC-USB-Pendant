@@ -61,6 +61,7 @@
 #define USB_LEN_OTG_DESC 0x03U
 #define USB_LEN_LANGID_STR_DESC 0x04U
 #define USB_LEN_OTHER_SPEED_DESC_SIZ 0x09U
+#define USB_LEN_DFU_DESC 0x09
 
 #define USBD_IDX_LANGID_STR 0x00U
 #define USBD_IDX_MFC_STR 0x01U
@@ -68,6 +69,7 @@
 #define USBD_IDX_SERIAL_STR 0x03U
 #define USBD_IDX_CONFIG_STR 0x04U
 #define USBD_IDX_INTERFACE_STR 0x05U
+#define USBD_IDX_OS_STR 0xEE
 
 #define USB_REQ_TYPE_STANDARD 0x00U
 #define USB_REQ_TYPE_CLASS 0x20U
@@ -90,6 +92,7 @@
 #define USB_REQ_GET_INTERFACE 0x0AU
 #define USB_REQ_SET_INTERFACE 0x0BU
 #define USB_REQ_SYNCH_FRAME 0x0CU
+#define USB_REQ_GET_OS_FEATURE_DESCRIPTOR 0x20
 
 #define USB_DESC_TYPE_DEVICE 0x01U
 #define USB_DESC_TYPE_CONFIGURATION 0x02U
@@ -100,6 +103,20 @@
 #define USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION 0x07U
 #define USB_DESC_TYPE_IAD 0x0BU
 #define USB_DESC_TYPE_BOS 0x0FU
+#define USB_DESC_TYPE_DFU 0x21
+
+#define USB_DESC_TYPE_OS_FEATURE_EXT_COMPAT_ID 4
+#define USB_DESC_TYPE_OS_FEATURE_EXT_PROPERTIES 5
+
+#define USB_DEVICE_CLASS_COMPOSITE 0xEF
+#define USB_DEVICE_CLASS_CDC 0x02
+
+#define USB_DEVICE_SUBCLASS_COMPOSITE 0x02
+#define USB_DEVICE_SUBCLASS_CDC 0x00
+
+#define USB_INTERFACE_CLASS_COMM_IFACE 0x02
+#define USB_INTERFACE_CLASS_CDC 0x0A
+#define USB_INTERFACE_CLASS_APP_SPECIFIC 0xFE
 
 #define USB_CONFIG_REMOTE_WAKEUP 0x02U
 #define USB_CONFIG_SELF_POWERED 0x01U
@@ -107,6 +124,18 @@
 #define USB_FEATURE_EP_HALT 0x00U
 #define USB_FEATURE_REMOTE_WAKEUP 0x01U
 #define USB_FEATURE_TEST_MODE 0x02U
+
+#define WINUSB_PROP_DATA_TYPE_REG_SZ 1
+#define WINUSB_PROP_DATA_TYPE_REG_EXPAND_SZ 2
+#define WINUSB_PROP_DATA_TYPE_REG_BINARY 3
+#define WINUSB_PROP_DATA_TYPE_REG_DWORD_LITTLE_ENDIAN 4
+#define WINUSB_PROP_DATA_TYPE_REG_DWORD_BIG_ENDIAN 5
+#define WINUSB_PROP_DATA_TYPE_REG_LINK 6
+#define WINUSB_PROP_DATA_TYPE_REG_REG_MULTI_SZ 7
+
+#define WINUSB_BCD_VERSION 0x0100
+#define WINUSB_REQ_GET_COMPATIBLE_ID_FEATURE_DESCRIPTOR 0x04
+#define WINUSB_REQ_GET_EXTENDED_PROPERTIES_OS_FEATURE_DESCRIPTOR 0x05
 
 #define USB_DEVICE_CAPABITY_TYPE 0x10U
 
@@ -147,6 +176,9 @@
 #define USBD_DESC_ECM_BCD_LOW 0x00U
 #define USBD_DESC_ECM_BCD_HIGH 0x10U
 #endif
+
+#define TRANSFER_SIZE_BYTES(sze) ((uint8_t)(sze)),	   /* XFERSIZEB0 */ \
+								 ((uint8_t)(sze >> 8)) /* XFERSIZEB1 */
 
 typedef struct usb_setup_req
 {
@@ -248,6 +280,9 @@ typedef struct
 	uint8_t *(*GetSerialStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
 	uint8_t *(*GetConfigurationStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
 	uint8_t *(*GetInterfaceStrDescriptor)(USBD_SpeedTypeDef speed, uint16_t *length);
+	uint8_t *(*GetOSStrDescriptor)(uint8_t speed, uint16_t *length);
+	uint8_t *(*GetExtPropertiesFeatureDescriptor)(uint8_t speed, uint16_t *length);
+	uint8_t *(*GetExtCompatIDFeatureDescriptor)(uint8_t speed, uint16_t *length);
 #if(USBD_CLASS_USER_STRING_DESC == 1)
 	uint8_t *(*GetUserStrDescriptor)(USBD_SpeedTypeDef speed, uint8_t idx, uint16_t *length);
 #endif /* USBD_CLASS_USER_STRING_DESC */

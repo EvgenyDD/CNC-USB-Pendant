@@ -36,12 +36,16 @@ INCDIR += base/Drivers/CMSIS/Device/ST/STM32H5xx/Include
 INCDIR += base/Drivers/CMSIS/Include
 INCDIR += usb/Core
 INCDIR += display
+INCDIR += md5
 
 SOURCES += $(call rwildcard, base/Core/Src base/Drivers/CMSIS base/Drivers/STM32H5xx_HAL_Driver usb/Core, *.c *.S *.s)
 SOURCES += pendant.c
+SOURCES += platform.c
 SOURCES += usbd_pend_hid.c
+SOURCES += usbd_core_dfu.c
 SOURCES += usbd_desc.c
 SOURCES += $(wildcard display/*.c)
+SOURCES += $(wildcard md5/*.c)
 SOURCES += base/startup_stm32h503xx.s
 
 LDSCRIPT += base/STM32H503xx_FLASH.ld

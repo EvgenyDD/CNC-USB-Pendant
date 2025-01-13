@@ -12,7 +12,27 @@ static void USBD_GetConfig(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static void USBD_GetStatus(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static void USBD_SetFeature(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static void USBD_ClrFeature(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
-static uint8_t USBD_GetLen(uint8_t *buf);
+static uint8_t USBD_GetLen(const uint8_t *buf);
+
+USBD_StatusTypeDef USBD_VendDevReq(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
+{
+	uint16_t len = 0;
+	uint8_t *pbuf = 0;
+
+	switch(req->wIndex)
+	{
+	case USB_DESC_TYPE_OS_FEATURE_EXT_PROPERTIES: pbuf = pdev->pDesc->GetExtPropertiesFeatureDescriptor(pdev->dev_speed, &len); break;
+	case USB_DESC_TYPE_OS_FEATURE_EXT_COMPAT_ID: pbuf = pdev->pDesc->GetExtCompatIDFeatureDescriptor(pdev->dev_speed, &len); break;
+	default: break;
+	}
+
+	if((len != 0) && (req->wLength != 0))
+	{
+		len = MIN(len, req->wLength);
+		USBD_CtlSendData(pdev, pbuf, len);
+	}
+	return USBD_OK;
+}
 
 USBD_StatusTypeDef USBD_StdDevReq(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
@@ -393,6 +413,18 @@ static void USBD_GetDescriptor(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *r
 			}
 			break;
 
+		case USBD_IDX_OS_STR: 
+			if(pdev->pDesc->GetOSStrDescriptor != NULL)
+			{
+				pbuf = pdev->pDesc->GetOSStrDescriptor(pdev->dev_speed, &len);
+			}
+			else
+			{
+				USBD_CtlError(pdev, req);
+				err++;
+			}
+			break;
+
 		default:
 #if(USBD_SUPPORT_USER_STRING_DESC == 1U)
 			pbuf = NULL;
@@ -738,10 +770,10 @@ void USBD_CtlError(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 	USBD_LL_StallEP(pdev, 0U);
 }
 
-void USBD_GetString(uint8_t *desc, uint8_t *unicode, uint16_t *len)
+void USBD_GetString(const uint8_t *desc, uint8_t *unicode, uint16_t *len)
 {
 	uint8_t idx = 0U;
-	uint8_t *pdesc;
+	const uint8_t *pdesc;
 
 	if(desc == NULL) return;
 
@@ -764,10 +796,10 @@ void USBD_GetString(uint8_t *desc, uint8_t *unicode, uint16_t *len)
 	}
 }
 
-static uint8_t USBD_GetLen(uint8_t *buf)
+static uint8_t USBD_GetLen(const uint8_t *buf)
 {
 	uint8_t len = 0U;
-	uint8_t *pbuff = buf;
+	const uint8_t *pbuff = buf;
 	while(*pbuff != (uint8_t)'\0')
 	{
 		len++;

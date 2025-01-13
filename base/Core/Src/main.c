@@ -24,6 +24,7 @@
 #include "usbd_core.h"
 #include "usbd_pend_hid.h"
 #include "platform.h"
+#include "usbd_pend_hid.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -102,7 +103,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+usdb_desc_init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */

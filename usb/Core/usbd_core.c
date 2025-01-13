@@ -519,7 +519,7 @@ USBD_StatusTypeDef USBD_ClrClassConfig(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
  */
 USBD_StatusTypeDef USBD_LL_SetupStage(USBD_HandleTypeDef *pdev, uint8_t *psetup)
 {
-	USBD_StatusTypeDef ret;
+	USBD_StatusTypeDef ret = USBD_OK;
 
 	USBD_ParseSetupRequest(&pdev->request, psetup);
 
@@ -527,23 +527,21 @@ USBD_StatusTypeDef USBD_LL_SetupStage(USBD_HandleTypeDef *pdev, uint8_t *psetup)
 
 	pdev->ep0_data_len = pdev->request.wLength;
 
-	switch(pdev->request.bmRequest & 0x1FU)
+	switch(pdev->request.bmRequest & USB_REQ_TYPE_MASK)
 	{
-	case USB_REQ_RECIPIENT_DEVICE:
-		ret = USBD_StdDevReq(pdev, &pdev->request);
+	case USB_REQ_TYPE_STANDARD:
+	case USB_REQ_TYPE_CLASS:
+		switch(pdev->request.bmRequest & 0x1F)
+		{
+		case USB_REQ_RECIPIENT_DEVICE: ret = USBD_StdDevReq(pdev, &pdev->request); break;
+		case USB_REQ_RECIPIENT_INTERFACE: ret = USBD_StdItfReq(pdev, &pdev->request); break;
+		case USB_REQ_RECIPIENT_ENDPOINT: ret = USBD_StdEPReq(pdev, &pdev->request); break;
+		default: ret = USBD_LL_StallEP(pdev, (pdev->request.bmRequest & 0x80U)); break;
+		}
 		break;
 
-	case USB_REQ_RECIPIENT_INTERFACE:
-		ret = USBD_StdItfReq(pdev, &pdev->request);
-		break;
-
-	case USB_REQ_RECIPIENT_ENDPOINT:
-		ret = USBD_StdEPReq(pdev, &pdev->request);
-		break;
-
-	default:
-		ret = USBD_LL_StallEP(pdev, (pdev->request.bmRequest & 0x80U));
-		break;
+	case USB_REQ_TYPE_VENDOR: ret = USBD_VendDevReq(pdev, &pdev->request); break;
+	default: break;
 	}
 
 	return ret;
