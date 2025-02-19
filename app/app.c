@@ -8,6 +8,9 @@
 #include "usbd_dfu.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
+extern ADC_HandleTypeDef hadc1;
+
+uint32_t adc_val[2];
 
 enum
 {
@@ -68,7 +71,7 @@ static struct
 	uint8_t rotaryButtonAxisKeyCode;
 	int8_t stepCount;
 	uint8_t crc;
-} hid_report = {0x04, 0, 0, 0, FEED_10, AXIS_y, 0, 0xFF};
+} hid_report = {0x04, 0, 0, 0, FEED_2, AXIS_OFF, 0, 0xFF};
 
 bool g_stay_in_boot = false;
 uint32_t g_uid[3];
@@ -117,6 +120,8 @@ void init(void)
 
 	hid_req.seed = hid_req_prev.seed = 0xFE;
 
+	HAL_ADC_Start_DMA(&hadc1, adc_val, 2);
+
 	display_init();
 	display_set_font(font3x5);
 	display_line_h(0, 0, 128, 1);
@@ -130,10 +135,13 @@ uint32_t init_seq = 0;
 
 void loop(void)
 {
-	static uint32_t systick_ms_prev = 0;
-	uint32_t diff_ms = (HAL_GetTick() - systick_ms_prev);
-	if(diff_ms > 0x0FFFFFFF) diff_ms = 0xFFFFFFFF - systick_ms_prev + HAL_GetTick();
-	systick_ms_prev = HAL_GetTick();
+	static uint32_t tick_ms_prev = 0;
+	uint32_t diff_ms = (HAL_GetTick() - tick_ms_prev);
+	if(diff_ms > 0x7FFFFFFF) diff_ms = 0xFFFFFFFF - tick_ms_prev + HAL_GetTick();
+	tick_ms_prev = HAL_GetTick();
+
+	static const uint8_t rot_feed_lookup[] = {FEED_2, FEED_5, FEED_10, FEED_30, FEED_60, FEED_100};
+	static const uint8_t rot_axis_lookup[] = {AXIS_OFF, AXIS_x, AXIS_y, AXIS_z, AXIS_a, AXIS_b, AXIS_c};
 
 	static uint32_t prev_tim = 0;
 	{ // report update
@@ -144,6 +152,8 @@ void loop(void)
 			init_seq--;
 		}
 		hid_report.stepCount = (int32_t)(TIM1->CNT - prev_tim);
+		hid_report.rotaryButtonFeedKeyCode = rot_feed_lookup[(5 * adc_val[0] + 2048) >> 12];
+		hid_report.rotaryButtonAxisKeyCode = rot_axis_lookup[(6 * adc_val[1] + 2048) >> 12];
 		hid_report.crc = hid_report.keyCode
 							 ? hid_report.randomByte - (hid_report.keyCode ^ (hid_report.randomByte & hid_req.seed))
 							 : hid_report.randomByte & hid_req.seed;
@@ -161,11 +171,11 @@ static void parse_req(bool updated)
 		display_buffer_clear();
 
 		display_set_font(font5x8);
-		display_print(0, 0, false, "Z %c%d.%04d", hid_req.axis[2].coord_sign ? '-' : '+', hid_req.axis[2].integer_val, hid_req.axis[2].fract_val);
-		display_print(0, 12, false, "Y %c%d.%04d", hid_req.axis[1].coord_sign ? '-' : '+', hid_req.axis[1].integer_val, hid_req.axis[1].fract_val);
-		display_print(0, 24, false, "X %c%d.%04d", hid_req.axis[0].coord_sign ? '-' : '+', hid_req.axis[0].integer_val, hid_req.axis[0].fract_val);
-		display_print(0, 36, false, "FD: %d %d", hid_req.feedrate, hid_req.spindle_feedrate);
-		display_print(0, 48, false, "R %d REL %d STP %d", hid_req.disp_flags.is_reset, hid_req.disp_flags.is_rel_coord, hid_req.disp_flags.step_mode);
+		display_print(0, 0, false, "Z %c%d.%04d ", hid_req.axis[2].coord_sign ? '-' : '+', hid_req.axis[2].integer_val, hid_req.axis[2].fract_val);
+		display_print(0, 12, false, "Y %c%d.%04d ", hid_req.axis[1].coord_sign ? '-' : '+', hid_req.axis[1].integer_val, hid_req.axis[1].fract_val);
+		display_print(0, 24, false, "X %c%d.%04d ", hid_req.axis[0].coord_sign ? '-' : '+', hid_req.axis[0].integer_val, hid_req.axis[0].fract_val);
+		display_print(0, 36, false, "FD: %d %d ", hid_req.feedrate, hid_req.spindle_feedrate);
+		display_print(0, 48, false, "R %d REL %d STP %d ", hid_req.disp_flags.is_reset, hid_req.disp_flags.is_rel_coord, hid_req.disp_flags.step_mode);
 		init_seq = 20;
 	}
 	static uint8_t upd_cnt = 0;
