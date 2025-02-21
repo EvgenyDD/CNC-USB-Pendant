@@ -1,6 +1,5 @@
 #include "usbd_device.h"
 #include "usbd_ctlreq.h"
-#include "usbd_dfu.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
@@ -145,17 +144,7 @@ static uint8_t setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req, uint8_
 {
 	switch(req->bmRequest & USB_REQ_RECIPIENT_MASK)
 	{
-	case USB_REQ_RECIPIENT_INTERFACE:
-		if(idx == 0)
-		{
-			return usbd_dfu_setup(pdev, req, idx);
-		}
-		else if(idx == 1)
-		{
-			return hid_setup(pdev, req, idx);
-		}
-		return USBD_FAIL;
-
+	case USB_REQ_RECIPIENT_INTERFACE: return hid_setup(pdev, req, idx);
 	case USB_REQ_RECIPIENT_ENDPOINT: return hid_setup(pdev, req, idx);
 	default: break;
 	}
@@ -183,7 +172,6 @@ static uint8_t ep0_rx_ready(USBD_HandleTypeDef *pdev, uint8_t idx)
 		pend_hid_parse_buf(hid_sts.report_buf_ep0, hid_sts.report_size_ep0);
 		hid_sts.is_ep0_rpt_avail = 0;
 	}
-	usbd_dfu_ep0_rx_ready(pdev, idx);
 	return 0;
 }
 

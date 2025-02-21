@@ -15,12 +15,12 @@ extern bool g_stay_in_boot;
 
 #if FW_TYPE == FW_LDR
 #define FW_TARGET FW_APP
-#define ADDR_ORIGIN ((uint32_t) & __app_start)
-#define ADDR_END ((uint32_t) & __app_end)
+#define ADDR_ORIGIN ((uint32_t)&__app_start)
+#define ADDR_END ((uint32_t)&__app_end)
 #elif FW_TYPE == FW_APP
 #define FW_TARGET FW_LDR
-#define ADDR_ORIGIN ((uint32_t) & __ldr_start)
-#define ADDR_END ((uint32_t) & __ldr_end)
+#define ADDR_ORIGIN ((uint32_t)&__ldr_start)
+#define ADDR_END ((uint32_t)&__ldr_end)
 #endif
 
 uint8_t usbd_buffer[USBD_BUF_SZ] = {0};
@@ -281,9 +281,6 @@ uint8_t usbd_dfu_setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req, uint
 	return USBD_OK;
 }
 
-int g_wr_sts[128] = {0};
-int g_wr_sts_cnt = 0;
-
 uint8_t usbd_dfu_ep0_rx_ready(USBD_HandleTypeDef *pdev, uint8_t idx)
 {
 	if(dl_pending)
@@ -322,7 +319,6 @@ uint8_t usbd_dfu_ep0_rx_ready(USBD_HandleTypeDef *pdev, uint8_t idx)
 				}
 				if(addr_off == 0) platform_flash_erase_flag_reset();
 				sts = platform_flash_write(ADDR_ORIGIN + addr_off, &usbd_buffer[4], size_to_write);
-				if(sts) g_wr_sts[g_wr_sts_cnt++] = sts;
 			}
 			dwnload_was = true;
 			return sts;

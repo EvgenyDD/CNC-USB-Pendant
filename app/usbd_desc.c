@@ -46,93 +46,7 @@ __ALIGN_BEGIN uint8_t desc_lang_id[] __ALIGN_END = {
 	LOBYTE(USBD_LANGID_STRING),
 	HIBYTE(USBD_LANGID_STRING),
 };
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpacked"
-struct __packed
-{
-	uint8_t bLength;
-	uint8_t bDescriptorType;
-	uint16_t wData[7];
-	uint8_t bVendorCode;
-	uint8_t bPadding;
-} usbd_os_str_desc = {
-	sizeof(usbd_os_str_desc),
-	USB_DESC_TYPE_STRING,
-	u"MSFT100",
-	USB_REQ_GET_OS_FEATURE_DESCRIPTOR,
-	0,
-};
 
-struct __packed
-{
-	// Header
-	uint32_t dwLength;
-	uint16_t bcdVersion;
-	uint16_t wIndex;
-	uint8_t bCount;
-	uint8_t bReserved1[7];
-	// Function Section 1
-	uint8_t bFirstInterfaceNumber;
-	uint8_t bReserved2;
-	uint8_t bCompatibleID[8];
-	uint8_t bSubCompatibleID[8];
-	uint8_t bReserved3[6];
-} usbd_compat_id_desc = {
-	sizeof(usbd_compat_id_desc),
-	WINUSB_BCD_VERSION,
-	WINUSB_REQ_GET_COMPATIBLE_ID_FEATURE_DESCRIPTOR, // wIndex
-	1,												 // bCount
-	{0},											 // bReserved1
-	0,												 // bFirstInterfaceNumber
-	1,												 // bReserved2
-	"WINUSB",										 // bCompatibleID
-	{0},											 // bSubCompatibleID
-	{0},											 // bReserved3
-};
-
-struct winusb_ext_prop_desc_hdr
-{
-	// header
-	uint32_t dwLength;
-	uint16_t bcdVersion;
-	uint16_t wIndex;
-	uint16_t wNumFeatures;
-} __packed;
-
-struct winusb_ext_prop_feat_desc
-{
-	// feature no. 1
-	uint32_t dwSize;
-	uint32_t dwPropertyDataType;
-	uint16_t wPropertyNameLength;
-	const uint16_t bPropertyName[21];
-	uint32_t dwPropertyDataLength;
-	uint16_t bPropertyData[40];
-} __packed;
-
-struct winusb_ext_prop_desc
-{
-	struct winusb_ext_prop_desc_hdr header;
-	struct winusb_ext_prop_feat_desc features[1];
-} __packed;
-#pragma GCC diagnostic pop
-
-struct winusb_ext_prop_desc usbd_winusb_ex_prop_desc = {
-	.header = {
-		.dwLength = sizeof(struct winusb_ext_prop_desc_hdr) + sizeof(struct winusb_ext_prop_feat_desc),
-		.bcdVersion = WINUSB_BCD_VERSION,
-		.wIndex = WINUSB_REQ_GET_EXTENDED_PROPERTIES_OS_FEATURE_DESCRIPTOR,
-		.wNumFeatures = 1,
-	},
-	.features = {{
-		.dwSize = sizeof(struct winusb_ext_prop_feat_desc),
-		.dwPropertyDataType = WINUSB_PROP_DATA_TYPE_REG_REG_MULTI_SZ,
-		.wPropertyNameLength = sizeof(usbd_winusb_ex_prop_desc.features[0].bPropertyName),
-		.bPropertyName = u"DeviceInterfaceGUIDs",
-		.dwPropertyDataLength = sizeof(usbd_winusb_ex_prop_desc.features[0].bPropertyData),
-		.bPropertyData = u"{00000000-0000-0000-0000-000000000000}\0",
-	}},
-};
 __ALIGN_BEGIN uint8_t pend_hid_desc_report[] __ALIGN_END = {
 	0x06, 0x00, 0xff,					// USAGE_PAGE (Generic Desktop)
 	0x09, 0x01,							// USAGE (Vendor Usage 1)
@@ -156,49 +70,20 @@ __ALIGN_BEGIN uint8_t pend_hid_desc_report[] __ALIGN_END = {
 };
 
 __ALIGN_BEGIN static uint8_t desc_cfg[] __ALIGN_END = {
-	0x09,										// bLength: Configuration Descriptor size
-	USB_DESC_TYPE_CONFIGURATION,				// bDescriptorType: Configuration
-	LOBYTE(USBD_PEND_HID_DFU_CONFIG_DESC_SIZE), // wTotalLength: Bytes returned
-	HIBYTE(USBD_PEND_HID_DFU_CONFIG_DESC_SIZE), //
-	0x02,										// bNumInterfaces: 2 interface (1 for DFU, 1 for HID)
-	0x01,										// bConfigurationValue: Configuration value
-	0x00,										// iConfiguration: Index of string descriptor describing the configuration
-	0xE0,										// bmAttributes: Bus Powered according to user configuration
-	USBD_MAX_POWER,								// MaxPower (mA)
-
-	// ******* Descriptor of DFU interface 0 Alternate setting 0
-	USBD_DFU_IF_DESC(0), // This interface is mandatory for all devices
-
-	// ******* DFU Functional Descriptor
-	0x09,						   // blength
-	USB_DESC_TYPE_DFU,			   // functional descriptor
-	0x0B,						   /* bmAttribute
-										 bitCanDnload             = 1      (bit 0)
-										 bitCanUpload             = 1      (bit 1)
-										 bitManifestationTolerant = 0      (bit 2)
-										 bitWillDetach            = 1      (bit 3)
-										 Reserved                          (bit4-6)
-										 bitAcceleratedST         = 0      (bit 7) */
-	255,						   // detach timeout= 255 ms
-	0,							   //
-	TRANSFER_SIZE_BYTES(XFERSIZE), // WARNING: In DMA mode the multiple MPS packets feature is still not supported ==> when using DMA XFERSIZE should be 64
-	0x1A,						   // bcdDFUVersion
-	0x01,
-
-	// ******* IAD to associate the one HID interface
-	0x08, // bLength
-	0x0B, // bDescriptorType
-	0x01, // bFirstInterface
-	0x01, // bInterfaceCount
-	0x03, // bFunctionClass
-	0x00, // bFunctionSubClass
-	0x00, // bFunctionProtocol
-	0,	  // iFunction
+	0x09,									// bLength: Configuration Descriptor size
+	USB_DESC_TYPE_CONFIGURATION,			// bDescriptorType: Configuration
+	LOBYTE(USBD_PEND_HID_CONFIG_DESC_SIZE), // wTotalLength: Bytes returned
+	HIBYTE(USBD_PEND_HID_CONFIG_DESC_SIZE), //
+	0x01,									// bNumInterfaces: 1 interface for HID
+	0x01,									// bConfigurationValue: Configuration value
+	0x00,									// iConfiguration: Index of string descriptor describing the configuration
+	0xE0,									// bmAttributes: Bus Powered according to user configuration
+	USBD_MAX_POWER,							// MaxPower (mA)
 
 	/************** Descriptor of Pendant HID interface ****************/
 	0x09,					 // bLength: Interface Descriptor size
 	USB_DESC_TYPE_INTERFACE, // bDescriptorType: Interface descriptor type
-	0x01,					 // bInterfaceNumber: Number of Interface
+	0x00,					 // bInterfaceNumber: Number of Interface
 	0x00,					 // bAlternateSetting: Alternate setting
 	0x02,					 // bNumEndpoints
 	0x03,					 // bInterfaceClass: CUSTOM_HID
@@ -349,85 +234,23 @@ uint8_t *pend_hid_get_desc_cfg_hs(uint16_t *length)
 
 static uint8_t *usbd_usr_os_str_desc(uint8_t speed, uint16_t *length)
 {
-	*length = usbd_os_str_desc.bLength;
-	return (uint8_t *)&usbd_os_str_desc;
+	*length = 0;
+	return USBD_StrDesc;
 }
 
 static uint8_t *usbd_usr_ext_prop_feat_desc(uint8_t speed, uint16_t *length)
 {
-	*length = usbd_winusb_ex_prop_desc.header.dwLength;
-	return (uint8_t *)&usbd_winusb_ex_prop_desc;
+	*length = 0;
+	return USBD_StrDesc;
 }
 
 static uint8_t *usbd_usr_ext_compat_id_feat_desc(uint8_t speed, uint16_t *length)
 {
-	*length = usbd_compat_id_desc.dwLength;
-	return (uint8_t *)&usbd_compat_id_desc;
+	*length = 0;
+	return USBD_StrDesc;
 }
 
-void usdb_desc_init(void)
-{
-	// Generate GUID by PID/VID/NAME/SERIAL
-#ifndef USE_STD_LIB_GEN
-	uint8_t buf[64], hash[16];
-	int len = snprintf((char *)buf, sizeof(buf), "USB\\VID_%04X&PID_%04X\\%s_%08lX%08lX%08lX", USBD_VID, USBD_PID, DEV, g_uid[0], g_uid[1], g_uid[2]);
-	md5_data(buf, len, hash);
-	len = snprintf((char *)buf, sizeof(buf), "{%02X%02X%02X%02X-%02X%02X-3%X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X}", // RFC9562 - Type 3
-				   hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6] & 0xF, hash[7],
-				   0x80 | (hash[8] & 0x3F), hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
-	for(int i = 0; i < len && i < (int)(sizeof(usbd_winusb_ex_prop_desc.features[0].bPropertyData) / sizeof(usbd_winusb_ex_prop_desc.features[0].bPropertyData[0])); i++)
-		usbd_winusb_ex_prop_desc.features[0].bPropertyData[i] = buf[i];
-#else
-	// smaller size without using libc
-	uint8_t buf[64] = "USB\\VID_****&PID_****\\", hash[16];
-	for(uint32_t i = 0; i < 4; i++)
-		buf[8 + i] = hex2ch((USBD_VID >> (4 * (3 - i))) & 0xF);
-	for(uint32_t i = 0; i < 4; i++)
-		buf[17 + i] = hex2ch((USBD_PID >> (4 * (3 - i))) & 0xF);
-	uint32_t len_dev_str = strlen(DEV);
-	memcpy(buf + 22, DEV, len_dev_str);
-	uint32_t c = 22 + len_dev_str + 1;
-	buf[22 + len_dev_str] = '_';
-	for(uint32_t i = 0; i < 3; i++)
-		for(uint32_t j = 0; j < 8; j++)
-			buf[c++] = hex2ch((g_uid[i] >> (4 * (7 - j))) & 0xF);
-	md5_data(buf, c, hash);
-	memcpy(buf, "{********-****-3***-****-************}", 38); // RFC9562 - Type 3
-	buf[1] = hex2ch((hash[0] >> 4) & 0xF);
-	buf[2] = hex2ch((hash[0] >> 0) & 0xF);
-	buf[3] = hex2ch((hash[1] >> 4) & 0xF);
-	buf[4] = hex2ch((hash[1] >> 0) & 0xF);
-	buf[5] = hex2ch((hash[2] >> 4) & 0xF);
-	buf[6] = hex2ch((hash[2] >> 0) & 0xF);
-	buf[7] = hex2ch((hash[3] >> 4) & 0xF);
-	buf[8] = hex2ch((hash[3] >> 0) & 0xF); // -
-	buf[10] = hex2ch((hash[4] >> 4) & 0xF);
-	buf[11] = hex2ch((hash[4] >> 0) & 0xF);
-	buf[12] = hex2ch((hash[5] >> 4) & 0xF);
-	buf[13] = hex2ch((hash[5] >> 0) & 0xF); // -
-	buf[16] = hex2ch((hash[6] >> 0) & 0xF);
-	buf[17] = hex2ch((hash[7] >> 4) & 0xF);
-	buf[18] = hex2ch((hash[7] >> 0) & 0xF); // -
-	buf[20] = hex2ch(((0x80 | (hash[8] & 0x30)) >> 4) & 0xF);
-	buf[21] = hex2ch((hash[8] >> 0) & 0xF);
-	buf[22] = hex2ch((hash[9] >> 4) & 0xF);
-	buf[23] = hex2ch((hash[9] >> 0) & 0xF); // -
-	buf[25] = hex2ch((hash[10] >> 4) & 0xF);
-	buf[26] = hex2ch((hash[10] >> 0) & 0xF);
-	buf[27] = hex2ch((hash[11] >> 4) & 0xF);
-	buf[28] = hex2ch((hash[11] >> 0) & 0xF);
-	buf[29] = hex2ch((hash[12] >> 4) & 0xF);
-	buf[30] = hex2ch((hash[12] >> 0) & 0xF);
-	buf[31] = hex2ch((hash[13] >> 4) & 0xF);
-	buf[32] = hex2ch((hash[13] >> 0) & 0xF);
-	buf[33] = hex2ch((hash[14] >> 4) & 0xF);
-	buf[34] = hex2ch((hash[14] >> 0) & 0xF);
-	buf[35] = hex2ch((hash[15] >> 4) & 0xF);
-	buf[36] = hex2ch((hash[15] >> 0) & 0xF);
-	for(int i = 0; i < 38 && i < (int)(sizeof(usbd_winusb_ex_prop_desc.features[0].bPropertyData) / sizeof(usbd_winusb_ex_prop_desc.features[0].bPropertyData[0])); i++)
-		usbd_winusb_ex_prop_desc.features[0].bPropertyData[i] = buf[i];
-#endif
-}
+void usdb_desc_init(void) {}
 
 USBD_DescriptorsTypeDef usbd_class_descriptors = {
 	get_str_desc_dev,
@@ -448,6 +271,5 @@ enum
 	_check_desc_lang_id = 1 / (sizeof(desc_lang_id) == USB_LEN_LANGID_STR_DESC ? 1 : 0),
 	_check_desc_report = 1 / (sizeof(pend_hid_desc_report) == USBD_CUSTOM_HID_REPORT_DESC_SIZE ? 1 : 0),
 	_check_pend_hid_desc = 1 / (sizeof(pend_hid_desc) == USBD_PEND_HID_DESC_SIZE ? 1 : 0),
-	// _check_desc_cfg = 1 / (sizeof(desc_cfg) == USBD_PEND_HID_CONFIG_DESC_SIZE ? 1 : 0),
-	_check_desc_cfg = 1 / (sizeof(desc_cfg) == USBD_PEND_HID_DFU_CONFIG_DESC_SIZE ? 1 : 0),
+	_check_desc_cfg = 1 / (sizeof(desc_cfg) == USBD_PEND_HID_CONFIG_DESC_SIZE ? 1 : 0),
 };

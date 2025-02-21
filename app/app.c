@@ -5,7 +5,6 @@
 #include "platform.h"
 #include "ret_mem.h"
 #include "usbd_device.h"
-#include "usbd_dfu.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern ADC_HandleTypeDef hadc1;
@@ -160,8 +159,6 @@ void loop(void)
 	}
 	if(usbd_pend_hid_send_report(&hUsbDeviceFS, (uint8_t *)&hid_report, sizeof(hid_report)) == 0) prev_tim = TIM1->CNT;
 	if(display_is_update_pending()) display_update();
-
-	usbd_dfu_poll(diff_ms);
 }
 
 static void parse_req(bool updated)

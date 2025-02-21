@@ -8,7 +8,7 @@
 #include "usbd_dfu.h"
 #include <string.h>
 
-#define BOOT_DELAY 500
+#define BOOT_DELAY 3000
 
 bool g_stay_in_boot = false;
 uint32_t g_uid[3];
